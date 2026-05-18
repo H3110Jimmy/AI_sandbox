@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -31,6 +32,13 @@ int child_function(void *arg){
         return -1;
     }
     printf("[Inside] Mount /proc successfully!\n");
+    //UTS
+    char hostname[] = "sandbox-env";
+    if(sethostname(hostname, strlen(hostname))!=0){
+        perror("[Error] sethostname fail");
+        return -1;
+    }
+    printf("[Inside] Hostname changed to '%s'!\n", hostname);
     
     //這行成功後面的程式碼都不會執行
     char *argv[] = {"/bin/bash", NULL};
@@ -50,7 +58,7 @@ int main(void){
         flag : bitmask, 去決定隔離
         arg : 如果子process需要外部的參數用這裡傳
     */
-    pid_t pid = clone(child_function, child_stack + STACK_SIZE, CLONE_NEWPID | CLONE_NEWNS | CLONE_NEWNET |
+    pid_t pid = clone(child_function, child_stack + STACK_SIZE, CLONE_NEWPID | CLONE_NEWNS | CLONE_NEWNET | CLONE_NEWUTS | CLONE_NEWIPC | CLONE_NEWCGROUP |
                     SIGCHLD, NULL);
     printf("[Outside] trying to clone the box...\n");
     if(pid<0){
@@ -64,10 +72,10 @@ int main(void){
 /* 
     PID 隔離 CLONE_NEWPID [x]
     Mount 隔離 CLONE_NEWNS [x]
-    Network 隔離 CLONE_NEWNET
-    User 隔離 CLONE_NEWUSER
-    UTS 隔離 CLONE_NEWUTS
-    IPC 隔離 CLONE_NEWIPC
-    Cgroup 隔離 CLONE_NEWCGROUP
+    Network 隔離 CLONE_NEWNET [x]
+    User 隔離 CLONE_NEWUSER [ ]
+    UTS 隔離 CLONE_NEWUTS [x]
+    IPC 隔離 CLONE_NEWIPC [x]
+    Cgroup 隔離 CLONE_NEWCGROUP [x]
 */
 }
