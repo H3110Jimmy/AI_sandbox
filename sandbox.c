@@ -18,14 +18,27 @@ int child_function(void *arg){
     //Enter the box.
     printf("[Inside] Clone successfully!\n");
     //pid_namespace test
-    printf("--pid_namesapce--\n");
+    //printf("--pid namesapce test--\n");
     printf("[Inside] child pid inside namespace : %d\n",getpid());
     printf("[Inside] child process see parent pid : %d\n",getppid());
-    char *argv[] = {"/bin/bash",NULL};
+    /*char *argv[] = {"/bin/bash",NULL};
     execvp("/bin/bash",argv);
-    //現在沒有綁mount namespace 所以用上ps aux還是會顯示全部的process
+    ->現在沒有綁mount namespace 所以用上ps aux還是會顯示全部的process*/
     
-    return 1;
+    //mount
+    if(mount("proc", "/proc", "proc", 0, NULL)!=0){
+        perror("[Error] mount /proc fail");
+        return -1;
+    }
+    printf("[Inside] Mount /proc successfully!\n");
+    
+    //這行成功後面的程式碼都不會執行
+    char *argv[] = {"/bin/bash", NULL};
+    execvp("/bin/bash", argv);
+
+    perror("[Error] execvp fail");
+    return -1;
+
 }
 //--主程式--
 int main(void){
@@ -37,7 +50,8 @@ int main(void){
         flag : bitmask, 去決定隔離
         arg : 如果子process需要外部的參數用這裡傳
     */
-    pid_t pid = clone(child_function, child_stack + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
+    pid_t pid = clone(child_function, child_stack + STACK_SIZE, CLONE_NEWPID | CLONE_NEWNS | CLONE_NEWNET |
+                    SIGCHLD, NULL);
     printf("[Outside] trying to clone the box...\n");
     if(pid<0){
         perror("[Error] Clone fail.\n");
@@ -48,8 +62,8 @@ int main(void){
     printf("[Outside] Exit the box.\n");
     return 0;
 /* 
-    Mount 隔離 CLONE_NEWNS
-    PID 隔離 CLONE_NEWPID
+    PID 隔離 CLONE_NEWPID [x]
+    Mount 隔離 CLONE_NEWNS [x]
     Network 隔離 CLONE_NEWNET
     User 隔離 CLONE_NEWUSER
     UTS 隔離 CLONE_NEWUTS
