@@ -1,0 +1,10 @@
+{
+    "run_id": "52bc1c05-cf0a-4a6d-98f7-2a38cc2583d0",
+    "status": "success",
+    "stdout": "Hello Sandbox\n",
+    "stderr": "",
+    "exit_code": 0,
+    "execution_time": 0.073,
+    "created_at": "2026-05-18 21:59:22",
+    "code": "#include <stdio.h>\n\nint main() {\n    printf(\"Hello Sandbox\\n\");\n    return 0;\n}\n            "
+}
