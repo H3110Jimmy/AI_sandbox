@@ -1,0 +1,10 @@
+{
+    "run_id": "d3e6df4b-cde0-4a26-99d7-19b1ad0e9270",
+    "status": "compile_error",
+    "stdout": "",
+    "stderr": "/home/frank/AI_sandbox/backend/runs/d3e6df4b-cde0-4a26-99d7-19b1ad0e9270/main.c: In function \u2018main\u2019:\n/home/frank/AI_sandbox/backend/runs/d3e6df4b-cde0-4a26-99d7-19b1ad0e9270/main.c:4:32: error: expected \u2018;\u2019 before \u2018return\u2019\n    4 |     printf(\"Missing semicolon\")\n      |                                ^\n      |                                ;\n    5 |     return 0;\n      |     ~~~~~~                      \n",
+    "exit_code": 1,
+    "execution_time": 0.007,
+    "created_at": "2026-05-18 22:20:25",
+    "code": "#include <stdio.h>\n\nint main() {\n    printf(\"Missing semicolon\")\n    return 0;\n}\n"
+}

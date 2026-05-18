@@ -31,6 +31,13 @@ int main() {
             <button id="run-btn">
                 Run in Sandbox
             </button>
+            <div class="test-buttons">
+               <button class="test-btn" id="hello-test">Hello World</button>
+               <button class="test-btn" id="compile-test">Compile Error</button>
+               <button class="test-btn" id="timeout-test">Timeout</button>
+               <button class="test-btn" id="runtime-test">Runtime Error</button>
+               <button class="test-btn" id="memory-test">Memory Test</button>
+            </div>
 
         </section>
 
@@ -47,12 +54,21 @@ int main() {
             <h2>Resource Monitor</h2>
 
             <div class="resource-box">
-                <p>CPU Usage: 12%</p>
-                <p>Memory Usage: 32 MB</p>
-                <p>Execution Time: 0.12 s</p>
+                <p id="cpu-usage">CPU Usage: 0%</p>
+                <p id="memory-usage">Memory Usage: 0 MB</p>
+                <p id="execution-time">Execution Time: 0 s</p>
             </div>
 
         </section>
+        <section class="history-section">
+
+           <h2>Run History</h2>
+
+           <div id="history-list">
+
+           </div>
+
+       </section>
 
     </main>
 
