@@ -27,11 +27,29 @@ int child_function(void *arg){
     ->現在沒有綁mount namespace 所以用上ps aux還是會顯示全部的process*/
     
     //mount
+    if(chroot("./rootfs")!=0){
+        perror("[Error] chroot fail.");
+        return -1;
+    }
+    if (chdir("/") != 0) {
+        perror("[Error] chdir fail");
+        return -1;
+    }
+    printf("[Inside] chroot successfully!\n");
+
     if(mount("proc", "/proc", "proc", 0, NULL)!=0){
         perror("[Error] mount /proc fail");
         return -1;
     }
     printf("[Inside] Mount /proc successfully!\n");
+    
+    int max_fd=sysconf(_SC_OPEN_MAX);
+    for (int i=3;i<max_fd;i++){
+        //close from 3 to max_fd (0,1,2保留)
+        close(i);
+    }
+    printf("[Inside] Closed all unnecessary file descriptors.\n");
+    
     //UTS
     char hostname[] = "sandbox-env";
     if(sethostname(hostname, strlen(hostname))!=0){
@@ -41,8 +59,9 @@ int child_function(void *arg){
     printf("[Inside] Hostname changed to '%s'!\n", hostname);
     
     //這行成功後面的程式碼都不會執行
-    char *argv[] = {"/bin/bash", NULL};
-    execvp("/bin/bash", argv);
+    //原本是bash 但這個輕量版linux沒有 他是sh代替
+    char *argv[] = {"/bin/sh", NULL};
+    execvp("/bin/sh", argv);
 
     perror("[Error] execvp fail");
     return -1;
@@ -70,6 +89,7 @@ int main(void){
     printf("[Outside] Exit the box.\n");
     return 0;
 /* 
+Namespace : 隔離
     PID 隔離 CLONE_NEWPID [x]
     Mount 隔離 CLONE_NEWNS [x]
     Network 隔離 CLONE_NEWNET [x]
@@ -77,5 +97,8 @@ int main(void){
     UTS 隔離 CLONE_NEWUTS [x]
     IPC 隔離 CLONE_NEWIPC [x]
     Cgroup 隔離 CLONE_NEWCGROUP [x]
+
+Seccomp : 限制 (Secure Computing Mode)
+Cgroup : 
 */
 }
