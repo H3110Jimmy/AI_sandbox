@@ -1,84 +1,59 @@
-#define _GNU_SOURCE //為了能使用Linux部分功能
+#define _GNU_SOURCE
 #include <stdio.h>
-
 #include <sys/types.h>
-#include <unistd.h>//getpid()
-#include <sys/wait.h>//waitpid()
-#include <sched.h> //clone()
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <sys/mount.h>  //mount() umount()
-// 配置Memory space (stack) 給每個process
-// default 1MB (2的20次方) 
-#define STACK_SIZE (1024 * 1024)
-static char child_stack[STACK_SIZE];
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/syscall.h> // 給 pivot_root 使用
 
-//inside_sandbox
-int child_main(void* arg) {
-    printf("\n  ---> [Inside] sandbox is building...\n");
-    //========set 1 file system isolation=======
-    // 切換跟目錄到我們設好的小linux中，之後的執行都會認為在此地方
-    if (chroot("./rootfs") != 0) {
-        perror("chroot 失敗");
-        return -1;
-    }
-    // 回到(新的)根目錄
-    chdir("/");
-
-    //[Debug] 看底下實際目錄
-    printf("\n  ---> [Debug] 沙盒眼中的世界長這樣：\n");
-    system("ls -la /");
-    printf("  ---> [Debug] 列表結束\n\n");
-
-
-    // 掛載虛擬的 proc 檔案系統
-    // 將kernel內的虛擬進程檔案系統 功能 映射到/proc裡面
-    if (mount("proc", "/proc", "proc", 0, NULL) != 0) {
-        perror("mount proc 失敗");
-        return -1;
-    }
-
-    printf("  ---> [Inside] file system isolation done\n");
-    //======set 1 : file system isolation done=======
-    printf("  ---> [Inside] My pid is : %d\n", getpid());
+#define STACK_SIZE (1024*1024) //總共1MB
+static char child_stack[STACK_SIZE]; //child process的執行空間區
+//--child process function--
+int child_function(void *arg){
+    printf("\n");
+    //Enter the box.
+    printf("[Inside] Clone successfully!\n");
+    //pid_namespace test
+    printf("--pid_namesapce--\n");
+    printf("[Inside] child pid inside namespace : %d\n",getpid());
+    printf("[Inside] child process see parent pid : %d\n",getppid());
+    char *argv[] = {"/bin/bash",NULL};
+    execvp("/bin/bash",argv);
+    //現在沒有綁mount namespace 所以用上ps aux還是會顯示全部的process
     
-    // [修改] 這裡我們不只印字，我們啟動 Alpine 裡面的 shell
-    // 注意：因為 chroot 了，所以這裡的 /bin/sh 是 Alpine 提供的，不是伺服器原本的
-    system("/bin/sh"); 
-
-    // 離開前把掛載清除
-    umount("/proc");
-
-    printf("  ---> [Inside] 準備銷毀。\n");
-    return 0;
+    return 1;
 }
-int main() {
-    printf("[Outside] Ready to build sandbox...\n");
-    printf("[Outside] PID now is:%d\n",getpid());
-    //---build sandbox---
-    // 用clone可以操作更底層的東西
-    
-    // CLONE_VM : kernel不複製出空間，直接讓父子共用同一個Memory space
-    // SIGCHLD : 當此process結束或死亡，回傳通知
-    
-    // clone(執行的function,記憶體空間,附加條件)
-    // clone出一個子process去執行我們的測試程式
-
-    // CLONE_NEWNS 加上後process就看不到外界的資料夾了
-    int flags = CLONE_NEWPID | CLONE_NEWNS | SIGCHLD;
-    // CLONE_NEWNS : 像是一本獨立的筆記本，讓 process 在裡面做掛載動作時，不會改到別人的筆記本，解決「掛載動作會干擾宿主機」的問題。
-    // CLONE_NEWPID : 讓process只知道自己的pid =1
-    int child_pid = clone(child_main, child_stack + STACK_SIZE, flags, NULL);
-    
-    if (child_pid == -1) {
-        perror("clone failed");
-        return 1;
+//--主程式--
+int main(void){
+    printf("[Outside] Parent id :%d\n",getpid());
+    //clone = fork+有更精細的控制權
+    /*int clone(int (*fn)(void *), void *stack, int flags, void *arg);
+        fn: function pointer, child生出來後執行this.
+        stack: 分配給this child的記憶體空間.(因為不分的話會和父process共享同一個memory space)
+        flag : bitmask, 去決定隔離
+        arg : 如果子process需要外部的參數用這裡傳
+    */
+    pid_t pid = clone(child_function, child_stack + STACK_SIZE, CLONE_NEWPID | SIGCHLD, NULL);
+    printf("[Outside] trying to clone the box...\n");
+    if(pid<0){
+        perror("[Error] Clone fail.\n");
+        exit(EXIT_FAILURE);
     }
-
-    // 父行程停在這裡等黑盒子執行完畢
-    waitpid(child_pid, NULL, 0);
-
-    printf("\n[Outside] sandbox is closed.\n");
-
+    int status;
+    waitpid(pid, &status, 0);
+    printf("[Outside] Exit the box.\n");
     return 0;
+/* 
+    Mount 隔離 CLONE_NEWNS
+    PID 隔離 CLONE_NEWPID
+    Network 隔離 CLONE_NEWNET
+    User 隔離 CLONE_NEWUSER
+    UTS 隔離 CLONE_NEWUTS
+    IPC 隔離 CLONE_NEWIPC
+    Cgroup 隔離 CLONE_NEWCGROUP
+*/
 }
