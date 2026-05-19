@@ -1,3 +1,11 @@
+可手動更改參數
+1. CPU Time Limit
+->setup_limit(RLIMIT_CPU, 2, 3); 以及 Python 端 wrapper 的 timeout
+2. Memory Limit
+->Cgroup 的 memory.max 與 RLIMIT_AS 的 64 * 1024 * 1024。
+3. Max Processes Limit
+->Cgroup 的 pids.max 設定的 20。
+
 目前只支援C
 在沙盒裡面掛上一個輕便型的linux
 在這linux內裝上編譯系統

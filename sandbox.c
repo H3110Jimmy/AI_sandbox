@@ -161,9 +161,9 @@ int child_function(void *arg){
     fprintf(stderr,"[Inside] child pid inside namespace : %d\n",getpid());
     fprintf(stderr,"[Inside] child process see parent pid : %d\n",getppid());
 
-    setup_limit(RLIMIT_CPU,2,3); // soft:2 hard:3
+    setup_limit(RLIMIT_CPU,2,3); // soft:2s hard:3s
     setup_limit(RLIMIT_AS,64*1024*1024,128*1024*1024); //64MB
-    setup_limit(RLIMIT_NOFILE,256,512);
+    setup_limit(RLIMIT_NOFILE,256,512); /fd數量
 
     // Bind Mount 新根目錄
     if(mount("./rootfs", "./rootfs", "bind", MS_BIND | MS_REC, "") != 0){
@@ -171,7 +171,7 @@ int child_function(void *arg){
         return -1;
     }
 
-    // 執行 pivot_root 宇宙大改版
+
     mkdir("./rootfs/oldroot", 0777);
     if(syscall(SYS_pivot_root, "./rootfs", "./rootfs/oldroot") != 0){
         perror("[Error] pivot_root fail");
