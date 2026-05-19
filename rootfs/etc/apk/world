@@ -2,4 +2,6 @@ alpine-baselayout
 alpine-keys
 apk-tools
 busybox
+gcc
 libc-utils
+musl-dev

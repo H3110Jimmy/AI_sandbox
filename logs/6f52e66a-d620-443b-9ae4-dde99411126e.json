@@ -1,0 +1,10 @@
+{
+    "run_id": "6f52e66a-d620-443b-9ae4-dde99411126e",
+    "status": "compile_error",
+    "stdout": "",
+    "stderr": "[Outside] Parent id :28740\n[Error] \u5168\u57df\u639b\u8f09\u9ede\u8a2d\u70ba\u79c1\u6709\u5931\u6557: Operation not permitted\n",
+    "exit_code": 1,
+    "execution_time": 0.011,
+    "created_at": "2026-05-19 21:29:17",
+    "code": "#include <stdio.h>\n\nint main() {\n    printf(\"Hello Sandbox\\n\");\n    return 0;\n}\n"
+}

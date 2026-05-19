@@ -1,3 +1,6 @@
+目前只支援C
+在沙盒裡面掛上一個輕便型的linux
+在這linux內裝上編譯系統
 編譯
 gcc sandbox.c -o sandbox
 gcc sandbox.c -o sandbox -lseccomp
@@ -18,4 +21,25 @@ ipcs -> 看是否把IPC隔離開來
 最後用這個清掉
 ipcrm -m 0
 
-6. 
+JSON (Request)
+{
+  "submission_id": "sub_123456789",
+  "language": "python3", 
+  "code": "import sys\nfor line in sys.stdin:\n    print('Hello, ' + line.strip())",
+  "input": "World\nJimmy",
+  "limits": {
+    "time_limit_ms": 2000,
+    "memory_limit_kb": 65536
+  }
+}
+JSON (Response)
+{
+  "submission_id": "sub_123456789",
+  "status": "Accepted", 
+  "exit_code": 0,
+  "stdout": "Hello, World\nHello, Jimmy\n",
+  "stderr": "",
+  "execution_time_ms": 45,
+  "memory_used_kb": 12048,
+  "error_message": null
+}

@@ -1,0 +1,10 @@
+{
+    "run_id": "854ff468-fe91-473c-b2fe-a521d5716768",
+    "status": "memory_limit_exceeded",
+    "stdout": "",
+    "stderr": "[Outside] Parent id :28830\n[Outside] trying to clone the box...\n[Outside] \u8a18\u61b6\u9ad4\u9650\u5236\u5df2\u8a2d\u5b9a\u70ba 64MB\n[Outside] \u6700\u5927\u884c\u7a0b\u6578\u91cf\u5df2\u8a2d\u5b9a\u70ba 20\n[Outside] \u5df2\u5c07\u6c99\u76d2 (PID: 28831) \u95dc\u5165\u8cc7\u6e90\u9650\u5236\u5340\n[Outside] \u6b0a\u9650\u6620\u5c04\u5b8c\u6210\uff1a\u6c99\u76d2\u5167 root(0) -> \u5916\u90e8\u4f7f\u7528\u8005(1000)\n[Outside] sandbox\u4f48\u7f6e\u5b8c\u7562\uff0c\u91cb\u653e\u6c99\u76d2\u884c\u7a0b\uff01\n[Inside] Clone successfully!\n[Inside] child pid inside namespace : 1\n[Inside] child process see parent pid : 0\n[Inside] pivot_root successfully!\n[Inside] Mount /proc successfully!\n[Inside] Closed all unnecessary fds.\n[Inside] Hostname changed to 'sandbox-env'!\n\n[Outside] Sandbox is closed\uff1a\n[Outside] \u8cc7\u6e90\u9650\u5236\u5340\u5df2\u56de\u6536\nUser CPU time: 2.998692 s\nSys CPU time: 0.000000 s\nMax RSS: 1280 KB\n\n[Error] Memory Limit Exceeded: \u8a18\u61b6\u9ad4\u7528\u91cf\u8d85\u6a19 (Killed)\u3002",
+    "exit_code": 137,
+    "execution_time": 4.175,
+    "created_at": "2026-05-19 21:34:44",
+    "code": "int main() {\n    while (1) {\n    }\n    return 0;\n}\n"
+}
