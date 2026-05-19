@@ -1,5 +1,6 @@
 編譯
 gcc sandbox.c -o sandbox
+gcc sandbox.c -o sandbox -lseccomp
 
 執行
 sudo ./sandbox
