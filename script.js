@@ -143,10 +143,13 @@ runBtn.addEventListener("click", async function () {
         });
 
         const result = await response.json();
-
-        cpuUsage.textContent = "CPU Usage: N/A";
-        memoryUsage.textContent = "Memory Usage: N/A";
-        executionTime.textContent = "Execution Time: " + result.execution_time + " s";
+        console.log(result);
+        cpuUsage.textContent =
+            "CPU Time: " + (result.cpu_usage || "N/A");
+        memoryUsage.textContent =
+            "Memory Usage: " + (result.memory_usage || "N/A");
+        executionTime.textContent =
+            "Execution Time: " + result.execution_time + " s";
 
         appendOutput("[SYSTEM] Backend response received.");
         appendOutput("");

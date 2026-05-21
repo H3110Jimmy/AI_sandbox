@@ -228,6 +228,17 @@ class SandboxHandler(BaseHTTPRequestHandler):
             status = "success"
             stderr_msg = exec_result.stderr
 
+            cpu_usage = "N/A"
+            memory_usage = "N/A"
+
+            for line in stderr_msg.splitlines():
+                line = line.strip()
+                if "User CPU time:" in line:
+                    cpu_usage = line.split(":")[-1].strip()
+
+                if "Max RSS:" in line:
+                    memory_usage = line.split(":")[-1].strip()
+
             if exit_code != 0:
                 if stderr_msg is None:
                     stderr_msg = ""
@@ -261,6 +272,8 @@ class SandboxHandler(BaseHTTPRequestHandler):
                 "stderr": stderr_msg,
                 "exit_code": exit_code,
                 "execution_time": round(end_time - start_time, 3),
+                "cpu_usage": cpu_usage,
+                "memory_usage": memory_usage,
                 "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "code": code
             }
