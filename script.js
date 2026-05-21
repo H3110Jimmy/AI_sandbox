@@ -7,18 +7,47 @@ const executionTime = document.getElementById("execution-time");
 
 const codeEditor = document.getElementById("code-editor");
 const historyList = document.getElementById("history-list");
+
 const helloTest = document.getElementById("hello-test");
 const compileTest = document.getElementById("compile-test");
 const timeoutTest = document.getElementById("timeout-test");
 const runtimeTest = document.getElementById("runtime-test");
 const memoryTest = document.getElementById("memory-test");
 
-let timer = 0;
-let monitorInterval;
-
 function appendOutput(text) {
     outputBox.textContent += text + "\n";
     outputBox.scrollTop = outputBox.scrollHeight;
+}
+
+function getStatusClass(status) {
+    if (status === "success") return "status-success";
+    if (status === "compile_error") return "status-error";
+    if (status === "timeout") return "status-warning";
+    if (status === "runtime_error") return "status-runtime";
+    if (status === "memory_limit_exceeded") return "status-warning";
+    if (status === "security_violation") return "status-error";
+    if (status === "sandbox_error") return "status-warning";
+    return "status-default";
+}
+
+function addHistoryItem(result) {
+    const historyItem = document.createElement("div");
+    const statusClass = getStatusClass(result.status);
+
+    historyItem.className = `history-item ${statusClass}`;
+
+    historyItem.innerHTML = `
+        <b>Status:</b> ${result.status}<br>
+        <b>Exit Code:</b> ${result.exit_code}<br>
+        <b>Time:</b> ${result.execution_time} s<br>
+        <b>Run ID:</b> ${result.run_id}
+    `;
+
+    historyList.prepend(historyItem);
+
+    while (historyList.children.length > 5) {
+        historyList.removeChild(historyList.lastChild);
+    }
 }
 
 helloTest.addEventListener("click", function () {
@@ -77,42 +106,37 @@ int main() {
 });
 
 runBtn.addEventListener("click", async function () {
+    const code = codeEditor.value.trim();
+
+    if (code.length === 0) {
+        outputBox.textContent = "";
+        appendOutput("[ERROR] Code editor is empty.");
+        return;
+    }
+
+    if (code.length > 5000) {
+        outputBox.textContent = "";
+        appendOutput("[ERROR] Code is too long. Please keep it under 5000 characters.");
+        return;
+    }
+
+    runBtn.disabled = true;
+    runBtn.textContent = "Running...";
 
     outputBox.textContent = "";
 
-    timer = 0;
-
-    clearInterval(monitorInterval);
+    cpuUsage.textContent = "CPU Usage: Waiting...";
+    memoryUsage.textContent = "Memory Usage: Waiting...";
+    executionTime.textContent = "Execution Time: Running...";
 
     appendOutput("[SYSTEM] Sending code to backend...");
 
-    monitorInterval = setInterval(function () {
-
-        let cpu = Math.floor(Math.random() * 60) + 10;
-        let memory = Math.floor(Math.random() * 200) + 20;
-
-        timer += 1;
-
-        cpuUsage.textContent =
-            "CPU Usage: " + cpu + "%";
-
-        memoryUsage.textContent =
-            "Memory Usage: " + memory + " MB";
-
-        executionTime.textContent =
-            "Execution Time: " + timer + " s";
-
-    }, 1000);
-
     try {
-
         const response = await fetch("http://localhost:5000/run", {
             method: "POST",
-
             headers: {
                 "Content-Type": "application/json"
             },
-
             body: JSON.stringify({
                 code: codeEditor.value
             })
@@ -120,7 +144,9 @@ runBtn.addEventListener("click", async function () {
 
         const result = await response.json();
 
-        clearInterval(monitorInterval);
+        cpuUsage.textContent = "CPU Usage: N/A";
+        memoryUsage.textContent = "Memory Usage: N/A";
+        executionTime.textContent = "Execution Time: " + result.execution_time + " s";
 
         appendOutput("[SYSTEM] Backend response received.");
         appendOutput("");
@@ -131,32 +157,24 @@ runBtn.addEventListener("click", async function () {
 
         appendOutput("");
         appendOutput("===== STDOUT =====");
-
         appendOutput(result.stdout || "(empty)");
 
         appendOutput("");
         appendOutput("===== STDERR =====");
-
         appendOutput(result.stderr || "(empty)");
-        const historyItem = document.createElement("div");
 
-        historyItem.className = "history-item";
+        addHistoryItem(result);
 
-        historyItem.innerHTML =
-        `
-        <b>Status:</b> ${result.status}<br>
-        <b>Exit Code:</b> ${result.exit_code}<br>
-        <b>Time:</b> ${result.execution_time} s<br>
-        <b>Run ID:</b> ${result.run_id}
-        `;
+    } catch (error) {
+        cpuUsage.textContent = "CPU Usage: N/A";
+        memoryUsage.textContent = "Memory Usage: N/A";
+        executionTime.textContent = "Execution Time: Failed";
 
-        historyList.prepend(historyItem);
-        } catch (error) {
+        appendOutput("[ERROR] Failed to connect backend.");
+        appendOutput(error.toString());
 
-          clearInterval(monitorInterval);
-
-          appendOutput("[ERROR] Failed to connect backend.");
-          appendOutput(error.toString());
-          }
-
+    } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = "Run in Sandbox";
+    }
 });
