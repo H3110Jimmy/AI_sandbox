@@ -117,7 +117,35 @@ sudo python3 server.py
 | `memory_limit_exceeded`| `Exit Code: 137` (SIGKILL) | **記憶體超標**：程式宣告過大陣列或發生 Memory Leak，衝破 Cgroup 設定的 64MB 上限，被 OOM Killer 擊殺。 |
 | `runtime_error` | `Exit Code: 139` (SIGSEGV) <br> `Exit Code: 136` (SIGFPE) 等 | **執行期錯誤**：發生記憶體區段錯誤（如指標存取越界）、除以零等常見的 C 語言執行期崩潰。 |
 | `sandbox_error` | `Exit Code: 255` 或其他 | **沙盒內部錯誤**：沙盒初始化失敗（例如 Rootfs 掛載失敗或權限不足），屬系統環境設定問題。 |
+## API 回傳格式
 
+當前端呼叫 `POST /run` API 後，後端會回傳以下 JSON 格式：
+
+```json
+{
+    "status": "success",
+    "stdout": "...",
+    "stderr": "...",
+    "exit_code": 0,
+    "execution_time": 0.021,
+    "cpu_usage": "0.0012 s",
+    "memory_usage": "1408 KB",
+    "run_id": "UUID"
+}
+```
+
+### 欄位說明
+
+| 欄位名稱 | 說明 |
+| :--- | :--- |
+| `status` | 程式執行狀態 |
+| `stdout` | 程式標準輸出 |
+| `stderr` | 錯誤訊息與 Sandbox Log |
+| `exit_code` | Linux Exit Code |
+| `execution_time` | 程式執行時間 |
+| `cpu_usage` | CPU 使用時間 |
+| `memory_usage` | 記憶體使用量 |
+| `run_id` | 本次執行唯一識別碼 |
 ## 核心防禦機制
 ### 1. 七大 Namespace 隔離
 系統透過 `clone` 系統呼叫建立 7 種獨立的 Namespace，確保沙盒與宿主機 (Host) 處於完全平行的時空：
