@@ -243,27 +243,44 @@ class SandboxHandler(BaseHTTPRequestHandler):
                 if stderr_msg is None:
                     stderr_msg = ""
                     
+                # 準備一個專門用來放「置頂錯誤警告」的變數
+                error_alert = ""
+                    
                 if exit_code == 152: # SIGXCPU
                     status = "timeout"
-                    stderr_msg += "\n[Error] Program timeout: 執行時間超過 CPU 限制。"
-                elif exit_code == 137: # SIGKILL
-                    status = "memory_limit_exceeded"
-                    stderr_msg += "\n[Error] Memory Limit Exceeded: 記憶體用量超標 (Killed)。"
-                elif exit_code == 159: # SIGSYS
+                    error_alert = " [Error] Program timeout: 執行時間超過 CPU 軟限制。"
+                
+                elif exit_code == 137: # SIGKILL (可能觸發 Cgroup OOM 或是 CPU Hard Limit)
+                    if "User CPU time: 3." in stderr_msg:
+                        status = "timeout"
+                        error_alert = " [Error] Program timeout: 執行時間達到 CPU 硬限制 (3秒強制終止)。"
+                    else:
+                        status = "memory_limit_exceeded"
+                        error_alert = " [Error] Memory Limit Exceeded: 記憶體用量衝破 Cgroup 64MB 限制 (OOM Killed)。"
+                
+                elif exit_code == 159: # SIGSYS (Seccomp 攔截)
                     status = "security_violation"
-                    stderr_msg += "\n[Error] Security Violation: 觸發危險系統呼叫，已被 Seccomp 攔截。"
+                    error_alert = " [Error] Security Violation: 觸發危險系統呼叫，已被 Seccomp 攔截。"
+                
                 elif exit_code == 139: # SIGSEGV
                     status = "runtime_error"
-                    stderr_msg += "\n[Error] Segmentation fault: 記憶體區段錯誤。"
+                    error_alert = " [Error] Segmentation fault: 記憶體區段錯誤 (非法存取指標)。"
+                
                 elif exit_code == 136: # SIGFPE
                     status = "runtime_error"
-                    stderr_msg += "\n[Error] Floating point exception: 數學運算錯誤 (例如除以零)。"
-                elif exit_code == 255: # Sandbox internal
+                    error_alert = " [Error] Floating point exception: 數學運算錯誤 (例如除以零)。"
+                
+                elif exit_code == 255: # Sandbox internal failure
                     status = "sandbox_error"
-                    stderr_msg += "\n[Error] Sandbox internal failure: 沙盒初始化失敗。"
+                    error_alert = " [Error] Sandbox internal failure: 沙盒初始化或掛載失敗。"
+                
                 else:
                     status = "runtime_error"
-                    stderr_msg += f"\n[Error] Program exited abnormally with code {exit_code}."
+                    error_alert = f" [Error] Program exited abnormally with code {exit_code}."
+
+                # 將警告訊息放在最上面，並加上分隔線與底層日誌區隔
+                if error_alert:
+                    stderr_msg = f"{error_alert}\n=========================================\n[Sandbox Internal Logs]\n{stderr_msg}"
 
             return {
                 "run_id": run_id,
