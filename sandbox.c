@@ -72,34 +72,29 @@ void print_resource_usage(void){
 void setup_uid_gid_map(pid_t child_pid) {
     char path[256];
     FILE *fp;
-    uid_t outer_uid = 0;
-    gid_t outer_gid = 0;
+    
+    // 強制指定映射到宿主機的普通使用者 UID=1000, GID=1000 (請確認 jimmy 的 UID 是 1000)
+    uid_t outer_uid = 1000; 
+    gid_t outer_gid = 1000;
 
-    // 如果是用 sudo 執行的，嘗試獲取原本使用者的 UID/GID，讓沙盒內的 root 映射到外部普通人
-    char *sudo_uid = getenv("SUDO_UID");
-    char *sudo_gid = getenv("SUDO_GID");
-    if (sudo_uid && sudo_gid) {
-        outer_uid = atoi(sudo_uid);
-        outer_gid = atoi(sudo_gid);
-    } else {
-        outer_uid = getuid();
-        outer_gid = getgid();
-    }
-
-    // 寫入 gid_map 前必須先關閉 setgroups
+    // 先拒絕 setgroups (UserNS 寫入 gid_map 的必要條件)
     snprintf(path, sizeof(path), "/proc/%d/setgroups", child_pid);
     fp = fopen(path, "w");
     if (fp) {
         fprintf(fp, "deny\n");
         fclose(fp);
+    } else {
+        perror("[Error] 無法寫入 setgroups");
     }
 
-    // 映射 UID: 將沙盒內的 root (0) 映射到宿主機的普通使用者 (outer_uid)
+    // 映射 UID: 沙盒內 root(0) -> 外部使用者(1000)
     snprintf(path, sizeof(path), "/proc/%d/uid_map", child_pid);
     fp = fopen(path, "w");
     if (fp) {
         fprintf(fp, "0 %d 1\n", outer_uid);
         fclose(fp);
+    } else {
+        perror("[Error] 無法寫入 uid_map");
     }
 
     // 映射 GID
@@ -108,6 +103,8 @@ void setup_uid_gid_map(pid_t child_pid) {
     if (fp) {
         fprintf(fp, "0 %d 1\n", outer_gid);
         fclose(fp);
+    } else {
+        perror("[Error] 無法寫入 gid_map");
     }
     fprintf(stderr,"[Outside] 權限映射完成：沙盒內 root(0) -> 外部使用者(%d)\n", outer_uid);
 }
@@ -156,6 +153,14 @@ int child_function(void *arg){
     // [for uid namesapce]讀取管線，卡住自己，等待父行程在外面佈置好sandbox
     read(pipe_fd, &ch, 1);
     close(pipe_fd);
+    if (setgid(0) != 0) {
+        perror("[Error] setgid fail");
+        return -1;
+    }
+    if (setuid(0) != 0) {
+        perror("[Error] setuid fail");
+        return -1;
+    }
     //Enter the box.
     fprintf(stderr,"[Inside] Clone successfully!\n");
     fprintf(stderr,"[Inside] child pid inside namespace : %d\n",getpid());
@@ -163,7 +168,7 @@ int child_function(void *arg){
 
     setup_limit(RLIMIT_CPU,2,3); // soft:2s hard:3s
     setup_limit(RLIMIT_AS,64*1024*1024,128*1024*1024); //64MB
-    setup_limit(RLIMIT_NOFILE,256,512); /fd數量
+    setup_limit(RLIMIT_NOFILE,256,512);
 
     // Bind Mount 新根目錄
     if(mount("./rootfs", "./rootfs", "bind", MS_BIND | MS_REC, "") != 0){
