@@ -82,6 +82,26 @@ exit
 sudo python3 server.py
 # 啟動後即可進入index.html使用沙盒環境
 ```
+## 全端運作流程
+本系統將前端介面，後端 API 與底層 C 語言沙盒串接
+
+```text
+[瀏覽器 (index.html)]          [Python 伺服器 (server.py)]           [C 核心沙盒 (sandbox.c)]
+       │                                │                                │
+ 1. 提交 C 語言 Code ────(POST/run)───▶│                                 │
+       │                                │ 2. 生成UUID + 寫入 main.c       │
+       │                                │                                │
+       │                                │ 3. 啟動編譯程序 ─────────────────▶ 隔離環境內執行 gcc
+       │                        　      │◀──────(回傳編譯結果)────────────│
+       │                                │                           　　　│
+       │                                │ 4. 啟動執行程序 ─────────────────▶ 佈置 Namespaces/Cgroups
+       │                                │                                │   載入 Seccomp 黑名單
+       │                                │                                │   執行 main 二進位檔
+       │                                │◀────(回傳 Exit Code & 資源)────│
+       │                                │                                │
+       │                                │ 5. 錯誤分析                     │
+ 6. 更新網頁 Dashboard ◀──(回傳 JSON)───│ 儲存至 logs/                    │
+```
 
 ## 網頁執行狀態回報說明
 當程式碼執行完畢或被系統強制攔截時，API 將回傳以下幾種 `status` 狀態碼，並附帶詳細的 `stderr` 診斷說明：
