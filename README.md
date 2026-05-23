@@ -40,12 +40,13 @@ sudo rm -rf rootfs/*
 mkdir -p rootfs
 
 # 下載並解壓縮 Alpine mini rootfs
-wget [https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz](https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz)
+wget https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz
 sudo tar -xzf alpine-minirootfs-3.19.1-x86_64.tar.gz -C rootfs/
 
 # 建立執行期間需要的掛載與暫存目錄
 sudo mkdir -p rootfs/tmp/runs
 sudo mkdir -p rootfs/oldroot
+```
 
 5. 在沙盒中裝入gcc編譯器
 ```bash
