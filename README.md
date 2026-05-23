@@ -12,10 +12,10 @@
 AI_sandbox/
 ├── index.html       # 網頁前端介面 (使用者操作面板)
 ├── server.py        # Python 後端伺服器 (API 路由與沙盒排程)
-├── sandbox.c        # C 語言核心沙盒 (底層防禦機制實作)
+├── sandbox.c        # C 語言核心沙盒 (核心代碼)
 ├── .gitignore       # Git 忽略清單 (避免系統垃圾上傳)
-├── rootfs/          # (需自行建置) Alpine Linux 隔離環境
-└── logs/            # (自動產生) 程式碼執行歷史紀錄與驗屍報告
+├── rootfs/          # Alpine Linux 隔離環境 (內部微型fs)
+└── logs/            # 程式碼執行歷史紀錄與驗屍報告 (會自動生成)
 ```
 
 ## 環境要求
