@@ -83,6 +83,19 @@ sudo python3 server.py
 # 啟動後即可進入index.html使用沙盒環境
 ```
 
+## 網頁執行狀態回報說明
+當程式碼執行完畢或被系統強制攔截時，API 將回傳以下幾種 `status` 狀態碼，並附帶詳細的 `stderr` 診斷說明：
+
+| 狀態碼 (Status) | 觸發條件與底層 Exit Code | 說明與防禦機制對應 |
+| :--- | :--- | :--- |
+| `success` | `Exit Code: 0` | **執行成功**：程式碼安全且正常地執行完畢。 |
+| `compile_error` | `gcc` 回傳非 0 值 | **編譯失敗**：程式碼有語法錯誤，或因標頭檔缺失導致編譯器報錯。 |
+| `security_violation` | `Exit Code: 159` (SIGSYS) | **安全違規**：偵測到惡意系統呼叫（如 `unshare`, `ptrace` 等），被 Seccomp 防禦機制當場攔截並擊殺。 |
+| `timeout` | `Exit Code: 152` (SIGXCPU) <br>或被 `SIGKILL` 且時間達 3 秒 | **執行超時**：程式陷入無窮迴圈，或執行時間過長，觸發 CPU Time Limit 限制而被系統強制終止。 |
+| `memory_limit_exceeded`| `Exit Code: 137` (SIGKILL) | **記憶體超標**：程式宣告過大陣列或發生 Memory Leak，衝破 Cgroup 設定的 64MB 上限，被 OOM Killer 擊殺。 |
+| `runtime_error` | `Exit Code: 139` (SIGSEGV) <br> `Exit Code: 136` (SIGFPE) 等 | **執行期錯誤**：發生記憶體區段錯誤（如指標存取越界）、除以零等常見的 C 語言執行期崩潰。 |
+| `sandbox_error` | `Exit Code: 255` 或其他 | **沙盒內部錯誤**：沙盒初始化失敗（例如 Rootfs 掛載失敗或權限不足），屬系統環境設定問題。 |
+
 ## 核心防禦機制
 ### 1. 七大 Namespace 隔離
 系統透過 `clone` 系統呼叫建立 7 種獨立的 Namespace，確保沙盒與宿主機 (Host) 處於完全平行的時空：
