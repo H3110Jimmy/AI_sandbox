@@ -43,6 +43,9 @@ mkdir -p rootfs
 wget https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz
 sudo tar -xzf alpine-minirootfs-3.19.1-x86_64.tar.gz -C rootfs/
 
+# 解壓縮完畢後，刪除下載的壓縮檔以維持目錄整潔
+rm alpine-minirootfs-3.19.1-x86_64.tar.gz
+
 # 建立執行期間需要的掛載與暫存目錄
 sudo mkdir -p rootfs/tmp/runs
 sudo mkdir -p rootfs/oldroot
