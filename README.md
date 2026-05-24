@@ -10,15 +10,27 @@
 在專案中建置一個新的微型file system，在此之中加上gcc編譯器與各種限制達到沙盒之目的
 ```text
 AI_sandbox/
-├── index.html       # 網頁前端介面 (使用者操作面板)
-├── server.py        # Python 後端伺服器 (API 路由與沙盒排程)
-├── sandbox.c        # C 語言核心沙盒 (核心代碼)
-├── .gitignore       # Git 忽略清單 (避免系統垃圾上傳)
-├── rootfs/          # Alpine Linux 隔離環境 (內部微型fs)
-├── test.c           # 內部放一些測試用的code
-└── logs/            # 程式碼執行歷史紀錄與驗屍報告 (會自動生成)
-
-```
+├── index.html           # 網頁前端介面 (使用者操作面板)
+├── server.py            # Python 後端伺服器 (API 路由與沙盒排程)
+├── sandbox.c            # C 語言核心沙盒 (核心代碼)
+├── .gitignore           # Git 忽略清單 (避免系統垃圾上傳)
+├── test.c               # 內部放一些測試用的code
+│
+├── rootfs/              # Alpine Linux 隔離環境 (內部微型fs)
+│   ├── tmp/
+│       └── current_run/ # 最新一次執行資料
+│           
+│ 
+├── database/
+│   ├── sandbox.db       # SQLite歷史資料庫
+│   │   
+│   │
+│   ├── archive/         # 舊執行紀錄
+│   │   
+│   │
+│   └── logs/            # 程式碼執行歷史紀錄與驗屍報告 (會自動生成)
+│                        # JSON執行紀錄
+'''
 
 ## 環境要求
 1. **作業系統:** Linux (推薦 Ubuntu 20.04/22.04 或 WSL2 環境)
