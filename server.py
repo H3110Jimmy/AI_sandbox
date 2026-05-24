@@ -365,13 +365,20 @@ class SandboxHandler(BaseHTTPRequestHandler):
                     stderr_msg = ""
 
                 error_alert = ""
-
+                parsed_cpu_time = 0.0
+                if cpu_usage != "N/A":
+                    try:
+                        # 將 "2.995979 s" 掐頭去尾轉成浮點數 2.995979
+                        parsed_cpu_time = float(cpu_usage.replace("s", "").strip())
+                    except ValueError:
+                        pass
                 if exit_code == 152:
                     status = "timeout"
                     error_alert = " [Error] Program timeout: 執行時間超過 CPU 軟限制。"
 
                 elif exit_code == 137:
-                    if "User CPU time: 3." in stderr_msg:
+                    # 只要 CPU 時間接近 3 秒 (大於 2.9 秒)，就判定為 CPU 硬限制擊殺
+                    if parsed_cpu_time >= 2.9:
                         status = "timeout"
                         error_alert = " [Error] Program timeout: 執行時間達到 CPU 硬限制 (3秒強制終止)。"
                     else:

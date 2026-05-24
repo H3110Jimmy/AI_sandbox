@@ -123,18 +123,18 @@ void setup_seccomp(void){
         return ;
     }
     
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(unshare), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(setns), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(bpf), 0);   
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(mount), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(umount2), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(chroot), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(pivot_root), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(reboot), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(syslog), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(swapon), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(swapoff), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(ptrace), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(unshare), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(setns), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(bpf), 0);   
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(mount), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(umount2), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(chroot), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(pivot_root), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(reboot), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(syslog), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(swapon), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(swapoff), 0);
 
     if(seccomp_load(ctx)<0){
         perror("seccomp_load");
@@ -153,6 +153,10 @@ int child_function(void *arg){
     // [for uid namesapce]讀取管線，卡住自己，等待父行程在外面佈置好sandbox
     read(pipe_fd, &ch, 1);
     close(pipe_fd);
+    if (unshare(CLONE_NEWCGROUP) != 0) {
+        perror("[Error] unshare cgroup fail");
+        return -1;
+    }
     if (setgid(0) != 0) {
         perror("[Error] setgid fail");
         return -1;
@@ -264,7 +268,7 @@ int main(int argc, char *argv[]){
     */
     pid_t pid = clone(child_function, child_stack + STACK_SIZE, 
                       CLONE_NEWPID | CLONE_NEWNS | CLONE_NEWNET | CLONE_NEWUTS | 
-                      CLONE_NEWIPC | CLONE_NEWCGROUP | CLONE_NEWUSER | SIGCHLD, 
+                      CLONE_NEWIPC | CLONE_NEWUSER | SIGCHLD, 
                       (void *)&sargs);
     fprintf(stderr,"[Outside] trying to clone the box...\n");
     if(pid<0){
