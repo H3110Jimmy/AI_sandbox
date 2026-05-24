@@ -15,19 +15,12 @@ AI_sandbox/
 ├── sandbox.c            # C 語言核心沙盒 (核心代碼)
 ├── .gitignore           # Git 忽略清單 (避免系統垃圾上傳)
 ├── test.c               # 內部放一些測試用的code
-│
 ├── rootfs/              # Alpine Linux 隔離環境 (內部微型fs)
-│   ├── tmp/
+│   └── tmp/
 │       └── current_run/ # 最新一次執行資料
-│           
-│ 
 ├── database/
 │   ├── sandbox.db       # SQLite歷史資料庫
-│   │   
-│   │
 │   ├── archive/         # 舊執行紀錄
-│   │   
-│   │
 │   └── logs/            # 程式碼執行歷史紀錄與驗屍報告 (會自動生成)
 │                        # JSON執行紀錄
 '''
