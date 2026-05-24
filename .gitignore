@@ -3,6 +3,7 @@ sandbox
 *.o
 
 # 忽略微型作業系統環境與暫存檔
+database/
 rootfs/
 logs/
 __pycache__/
