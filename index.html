@@ -4,69 +4,211 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Sandbox</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <header>
-        <h1>AI Sandbox</h1>
-    </header>
+<header>
+    <h1>AI Sandbox</h1>
+</header>
 
-    <main class="main-layout">
 
-        <section class="panel editor-panel">
-            <h2>Code Editor</h2>
+<main class="main-layout">
 
-            <textarea id="code-editor">#include <stdio.h>
+    <section class="panel editor-panel">
+
+        <h2>Code Editor</h2>
+
+<textarea id="code-editor">#include <stdio.h>
 
 int main() {
     printf("Hello Sandbox\n");
     return 0;
-}</textarea>
+}
+</textarea>
 
-            <div class="button-row">
-                <button id="run-btn">Run in Sandbox</button>
-            </div>
+        <div class="button-row">
 
-            <div class="test-buttons">
-                <button class="test-btn" id="hello-test">Hello World</button>
-                <button class="test-btn" id="compile-test">Compile Error</button>
-                <button class="test-btn" id="timeout-test">Timeout</button>
-                <button class="test-btn" id="runtime-test">Runtime Error</button>
-                <button class="test-btn" id="memory-test">Memory Test</button>
-            </div>
-        </section>
+            <button
+            type="button"
+            id="run-btn">
 
-        <section class="panel output-panel">
-            <h2>Program Output</h2>
+            Run in Sandbox
 
-            <pre id="output-box">Hello Sandbox</pre>
-        </section>
+            </button>
 
-    </main>
+        </div>
 
-    <section class="dashboard-layout">
 
-        <section class="panel dashboard-card">
-            <h2>Resource Monitor</h2>
+        <div class="test-buttons">
 
-            <div class="info-box">
-                <p id="cpu-usage">CPU Usage: 0%</p>
-                <p id="memory-usage">Memory Usage: 0 MB</p>
-                <p id="execution-time">Execution Time: 0 s</p>
-            </div>
-        </section>
+            <button
+            type="button"
+            class="test-btn"
+            id="hello-test">
 
-        <section class="panel dashboard-card history-panel">
-            <h2>Run History</h2>
+            Hello World
 
-            <div id="history-list"></div>
-        </section>
+            </button>
+
+
+            <button
+            type="button"
+            class="test-btn"
+            id="compile-test">
+
+            Compile Error
+
+            </button>
+
+
+            <button
+            type="button"
+            class="test-btn"
+            id="timeout-test">
+
+            Timeout
+
+            </button>
+
+
+            <button
+            type="button"
+            class="test-btn"
+            id="runtime-test">
+
+            Runtime Error
+
+            </button>
+
+
+            <button
+            type="button"
+            class="test-btn"
+            id="memory-test">
+
+            Memory Test
+
+            </button>
+
+        </div>
 
     </section>
 
-    <script src="script.js"></script>
+
+
+    <section class="panel output-panel">
+
+        <h2>Program Output</h2>
+
+<pre id="output-box">
+Hello Sandbox
+</pre>
+
+    </section>
+
+</main>
+
+
+
+<section class="dashboard-layout">
+
+
+    <section class="panel dashboard-card">
+
+        <h2>Sandbox Status</h2>
+
+        <div class="info-box">
+
+            <p>
+            Namespace: Enabled
+            </p>
+
+            <p>
+            Seccomp: Enabled
+            </p>
+
+            <p>
+            Cgroup: Enabled
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <section class="panel dashboard-card">
+
+        <h2>Resource Monitor</h2>
+
+        <div class="info-box">
+
+            <p id="cpu-usage">
+            CPU Usage: 0%
+            </p>
+
+            <p id="memory-usage">
+            Memory Usage: 0 MB
+            </p>
+
+            <p id="execution-time">
+            Execution Time: 0 s
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <section class="panel dashboard-card history-panel">
+
+
+        <div class="history-title-row">
+
+            <h2>
+            Run History
+            </h2>
+
+            <button
+            type="button"
+            id="view-db-btn">
+
+            Database History
+
+            </button>
+
+        </div>
+
+
+        <div id="history-list">
+
+        </div>
+
+
+        <div
+        id="db-history-panel"
+        style="display:none;">
+
+            <h3>
+            All Database History
+            </h3>
+
+            <div id="db-history-list">
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+</section>
+
+<script src="scrip.js"></script>
 
 </body>
 </html>

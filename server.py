@@ -5,16 +5,51 @@ import subprocess
 import time
 import uuid
 import shutil
+import sqlite3
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CURRENT_RUN_DIR = os.path.join(BASE_DIR, "rootfs", "tmp", "current_run")
+
 DATABASE_DIR = os.path.join(BASE_DIR, "database")
+ARCHIVE_DIR = os.path.join(DATABASE_DIR, "archive")
 LOGS_DIR = os.path.join(DATABASE_DIR, "logs")
+DB_PATH = os.path.join(DATABASE_DIR, "sandbox.db")
 
 os.makedirs(CURRENT_RUN_DIR, exist_ok=True)
 os.makedirs(DATABASE_DIR, exist_ok=True)
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
+
+
+def init_database():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS run_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT NOT NULL,
+            status TEXT,
+            stdout TEXT,
+            stderr TEXT,
+            exit_code INTEGER,
+            execution_time REAL,
+            cpu_usage TEXT,
+            memory_usage TEXT,
+            created_at TEXT,
+            code TEXT,
+            current_run_dir TEXT,
+            database_dir TEXT
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+init_database()
 
 
 class SandboxHandler(BaseHTTPRequestHandler):
@@ -37,6 +72,16 @@ class SandboxHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({
                 "status": "ok",
                 "message": "Backend server is running"
+            }).encode())
+            return
+
+        if self.path == "/history":
+            history = self.get_all_history()
+
+            self._set_headers(200)
+            self.wfile.write(json.dumps({
+                "count": len(history),
+                "history": history
             }).encode())
             return
 
@@ -65,7 +110,7 @@ class SandboxHandler(BaseHTTPRequestHandler):
                 }).encode())
                 return
 
-            with open(log_path, "r") as f:
+            with open(log_path, "r", encoding="utf-8") as f:
                 log_data = json.load(f)
 
             self._set_headers(200)
@@ -102,7 +147,9 @@ class SandboxHandler(BaseHTTPRequestHandler):
                 return
 
             result = self.run_c_code(code)
+
             self.save_log(result)
+            self.save_to_database(result)
 
             self._set_headers(200)
             self.wfile.write(json.dumps(result).encode())
@@ -118,7 +165,7 @@ class SandboxHandler(BaseHTTPRequestHandler):
         if os.path.exists(CURRENT_RUN_DIR) and os.listdir(CURRENT_RUN_DIR):
             archive_name = time.strftime("run_%Y%m%d_%H%M%S")
             archive_name = archive_name + "_" + str(uuid.uuid4())[:8]
-            archive_path = os.path.join(DATABASE_DIR, archive_name)
+            archive_path = os.path.join(ARCHIVE_DIR, archive_name)
 
             shutil.move(CURRENT_RUN_DIR, archive_path)
 
@@ -128,8 +175,92 @@ class SandboxHandler(BaseHTTPRequestHandler):
         log_filename = result["run_id"] + ".json"
         log_path = os.path.join(LOGS_DIR, log_filename)
 
-        with open(log_path, "w") as f:
-            json.dump(result, f, indent=4)
+        with open(log_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=4, ensure_ascii=False)
+
+    def save_to_database(self, result):
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO run_history (
+                run_id,
+                status,
+                stdout,
+                stderr,
+                exit_code,
+                execution_time,
+                cpu_usage,
+                memory_usage,
+                created_at,
+                code,
+                current_run_dir,
+                database_dir
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            result.get("run_id"),
+            result.get("status"),
+            result.get("stdout"),
+            result.get("stderr"),
+            result.get("exit_code"),
+            result.get("execution_time"),
+            result.get("cpu_usage"),
+            result.get("memory_usage"),
+            result.get("created_at"),
+            result.get("code"),
+            result.get("current_run_dir"),
+            result.get("database_dir")
+        ))
+
+        conn.commit()
+        conn.close()
+
+    def get_all_history(self):
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                run_id,
+                status,
+                stdout,
+                stderr,
+                exit_code,
+                execution_time,
+                cpu_usage,
+                memory_usage,
+                created_at,
+                code,
+                current_run_dir,
+                database_dir
+            FROM run_history
+            ORDER BY id DESC
+        """)
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        history = []
+
+        for row in rows:
+            history.append({
+                "run_id": row["run_id"],
+                "status": row["status"],
+                "stdout": row["stdout"],
+                "stderr": row["stderr"],
+                "exit_code": row["exit_code"],
+                "execution_time": row["execution_time"],
+                "cpu_usage": row["cpu_usage"],
+                "memory_usage": row["memory_usage"],
+                "created_at": row["created_at"],
+                "code": row["code"],
+                "current_run_dir": row["current_run_dir"],
+                "database_dir": row["database_dir"]
+            })
+
+        return history
 
     def run_c_code(self, code):
 
@@ -140,7 +271,7 @@ class SandboxHandler(BaseHTTPRequestHandler):
 
         source_path = os.path.join(run_dir, "main.c")
 
-        with open(source_path, "w") as f:
+        with open(source_path, "w", encoding="utf-8") as f:
             f.write(code)
 
         sandbox_source_path = "/tmp/current_run/main.c"
@@ -318,8 +449,10 @@ def main():
     print("Backend server running at http://localhost:5000")
     print("API: POST /run")
     print("API: GET /logs")
+    print("API: GET /history")
     print("Current run dir:", CURRENT_RUN_DIR)
     print("Database dir:", DATABASE_DIR)
+    print("SQLite database:", DB_PATH)
 
     httpd.serve_forever()
 
