@@ -27,12 +27,9 @@ struct sandbox_args {
 void setup_cgroup(pid_t child_pid) {
     char path[256];
     FILE *fp;
-
-    // 1. 建立專屬的 Cgroup 資料夾
-    // 在 v2 中，只要建立資料夾，核心就會自動在裡面產生各種控制檔
+    //建立限制區資料夾
     mkdir(CGROUP_PATH, 0755);
-
-    // 2. 限制記憶體 (Memory Limit) - 例如 64MB
+    //限制memory space
     snprintf(path, sizeof(path), "%s/memory.max", CGROUP_PATH);
     fp = fopen(path, "w");
     if (fp) {
@@ -40,24 +37,21 @@ void setup_cgroup(pid_t child_pid) {
         fclose(fp);
         fprintf(stderr,"[Outside] 記憶體限制已設定為 64MB\n");
     }
-
-    // 3. 限制行程數量 (PID Limit) - 完美防禦 Fork Bomb
+    //限制process數
     snprintf(path, sizeof(path), "%s/pids.max", CGROUP_PATH);
     fp = fopen(path, "w");
     if (fp) {
-        fprintf(fp, "20\n"); // 這個 Cgroup 內最多只能有 20 個行程
+        fprintf(fp, "20\n"); //最多20個行程
         fclose(fp);
         fprintf(stderr,"[Outside] 最大行程數量已設定為 20\n");
     }
-
-    // 4. [關鍵] 將子行程 (沙盒) 抓進這個 Cgroup 裡面
     snprintf(path, sizeof(path), "%s/cgroup.procs", CGROUP_PATH);
     fp = fopen(path, "w");
-    if (fp) {
+    if(fp){
         fprintf(fp, "%d\n", child_pid);
         fclose(fp);
         fprintf(stderr,"[Outside] 已將沙盒 (PID: %d) 關入資源限制區\n", child_pid);
-    } else {
+    }else{
         perror("[Error] 無法寫入 cgroup.procs");
     }
 }
@@ -68,15 +62,11 @@ void print_resource_usage(void){
     fprintf(stderr,"Sys CPU time: %ld.%06ld s\n",ru.ru_stime.tv_sec, ru.ru_stime.tv_usec);
     fprintf(stderr,"Max RSS: %ld KB\n", ru.ru_maxrss);
 }
-// 設定 User Namespace UID/GID 映射 (由父行程在外部執行)
 void setup_uid_gid_map(pid_t child_pid) {
     char path[256];
     FILE *fp;
-    
-    // 強制指定映射到宿主機的普通使用者 UID=1000, GID=1000 (請確認 jimmy 的 UID 是 1000)
     uid_t outer_uid = 1000; 
     gid_t outer_gid = 1000;
-
     // 先拒絕 setgroups (UserNS 寫入 gid_map 的必要條件)
     snprintf(path, sizeof(path), "/proc/%d/setgroups", child_pid);
     fp = fopen(path, "w");
@@ -86,7 +76,6 @@ void setup_uid_gid_map(pid_t child_pid) {
     } else {
         perror("[Error] 無法寫入 setgroups");
     }
-
     // 映射 UID: 沙盒內 root(0) -> 外部使用者(1000)
     snprintf(path, sizeof(path), "/proc/%d/uid_map", child_pid);
     fp = fopen(path, "w");
@@ -97,7 +86,6 @@ void setup_uid_gid_map(pid_t child_pid) {
         perror("[Error] 無法寫入 uid_map");
     }
 
-    // 映射 GID
     snprintf(path, sizeof(path), "/proc/%d/gid_map", child_pid);
     fp = fopen(path, "w");
     if (fp) {
@@ -106,7 +94,7 @@ void setup_uid_gid_map(pid_t child_pid) {
     } else {
         perror("[Error] 無法寫入 gid_map");
     }
-    fprintf(stderr,"[Outside] 權限映射完成：沙盒內 root(0) -> 外部使用者(%d)\n", outer_uid);
+    fprintf(stderr,"[Outside] 權限映射完成：沙盒內root(0)->外部使用者(%d)\n", outer_uid);
 }
 void setup_limit(int resource, rlim_t soft, rlim_t hard){
     struct rlimit rl = {soft, hard};
@@ -152,7 +140,7 @@ int child_function(void *arg){
 
     // [for uid namesapce]讀取管線，卡住自己，等待父行程在外面佈置好sandbox
     read(pipe_fd, &ch, 1);
-    close(pipe_fd);
+    close(pipe_fd); //關掉pipe
     if (unshare(CLONE_NEWCGROUP) != 0) {
         perror("[Error] unshare cgroup fail");
         return -1;
@@ -179,20 +167,15 @@ int child_function(void *arg){
         perror("[Error] bind mount rootfs fail");
         return -1;
     }
-
-
     mkdir("./rootfs/oldroot", 0777);
     if(syscall(SYS_pivot_root, "./rootfs", "./rootfs/oldroot") != 0){
         perror("[Error] pivot_root fail");
         return -1;
     }
-
     if(chdir("/") != 0){
         perror("[Error] chdir fail");
         return -1;
     }
-
-    //把舊的宿主機根目錄徹底卸載並刪除完成真正的隔離
     if(umount2("/oldroot", MNT_DETACH)!=0){
         perror("[Error] umount2 oldroot fail");
         return -1;
@@ -241,7 +224,7 @@ int child_function(void *arg){
 //--主程式--
 int main(int argc, char *argv[]){
     fprintf(stderr,"[Outside] Parent id :%d\n",getpid());
-    // [超重要安全防線] 由外面的真 root 先將全域掛載設為私有，防止 umount 傳染回宿主機
+    // 由外面的真 root 先將全域掛載設為私有，防止 umount 傳染回宿主機
     if (mount(NULL, "/", NULL, MS_REC | MS_PRIVATE, NULL) != 0){
         perror("[Error] 全域掛載點設為私有失敗");
         exit(EXIT_FAILURE);
