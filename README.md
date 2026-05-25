@@ -41,7 +41,7 @@ sudo apt install gcc libseccomp-dev wget tar -y
 ```
 2. 安裝原始碼
 ```bash
-git clone <你的_GitHub_Repo_網址>
+git clone https://github.com/H3110Jimmy/AI_sandbox
 cd AI_sandbox
 ```
 3. 編譯系統的核心-沙盒
